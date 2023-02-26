@@ -84,6 +84,7 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
       console.log('SQLite file not present, fetching it from the server')
       let buf: ArrayBuffer
       try {
+        // TODO : display a progress for this
         buf = await fetch(this.wordDatabaseFullPath).then(res => res.arrayBuffer())
       } catch (err: any) {
         console.log('Unexpected error occured while fetching SQLite database from the server', err)

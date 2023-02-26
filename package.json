@@ -5,7 +5,7 @@
   "source": "public/index.html",
   "scripts": {
     "start": "parcel --no-cache",
-    "build": "parcel build",
+    "build": "parcel build --public-url ./",
     "test": "jest --config jest.config.js"
   },
   "author": "Isirode",

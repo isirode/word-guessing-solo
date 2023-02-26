@@ -29,6 +29,7 @@ Open the [DEVELOPER.md](./DEVELOPER.md) section.
 It is provided with the GNU AFFERO GENERAL PUBLIC LICENSE.
 
 This is a game where you have to find a word containing a randomly provided sequence of letters.
+
 Copyright (C) 2023  Isirode
 
 This program is free software: you can redistribute it and/or modify
