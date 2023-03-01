@@ -1,5 +1,7 @@
 import type { IWordDatabase } from 'word-guessing-lib'
 import Dexie from 'dexie'
+import { FetchProgress, SimpleProgressCallback } from '../../../utils/FetchProgress'
+import { Logger } from '../../../commands/XtermCommand'
 
 const initSqlJs = require('sql.js')
 
@@ -8,9 +10,6 @@ interface IFile {
   filename: string,
   blob: any
 }
-
-// const wordFilename = 'sample.db'
-// const sambleDbURL = 'http://dev.onesime-deleham.ovh:3000/' + wordFilename
 
 export class FrenchWordDatabase extends Dexie implements IWordDatabase {
   // words: Dexie.Table<IWord, number>
@@ -22,15 +21,19 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
   wordDatabaseFilename: string
   wasInit: boolean = false
 
+  logger: Logger;
+
   protected get wordDatabaseFullPath () {
     return this.wordDatabaseRootURL + this.wordDatabaseFilename
   }
 
-  constructor (wordDatabaseRootURL: string, wordDatabaseFilename: string) {
+  constructor (wordDatabaseRootURL: string, wordDatabaseFilename: string, logger: Logger) {
     super('FrenchWordDatabase')
 
-    this.wordDatabaseRootURL = wordDatabaseRootURL
-    this.wordDatabaseFilename = wordDatabaseFilename
+    this.wordDatabaseRootURL = wordDatabaseRootURL;
+    this.wordDatabaseFilename = wordDatabaseFilename;
+
+    this.logger = logger;
 
     this.version(1).stores({
       /* words: 'id, nomPropre, Verbe', 'id, nom, adjectif, prenom, patronyme, nomPropre, titre, Verbe, Adverbe, AdverbeDeNegation, AdverbeInterrogatif,' +
@@ -59,7 +62,7 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
   }
 
   initSQL = async () => {
-    console.log('querying sql.js file')
+    console.log('Querying sql.js WASM file');
 
     /*
     const SQL = await initSqlJs({
@@ -72,41 +75,77 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
       locateFile: file => `https://sql.js.org/dist/${file}`
     });
 
-    console.log('querying sample.db file')
+    // TODO : fix duplication
+    console.log('Initializing word database');
+    this.logger.writeLn('Initializing word database');
 
-    let uint8Array: Uint8Array
+    let uint8Array: Uint8Array | null = null;
     const count = await this.files.count()
     if (count !== 0) {
-      console.log('Sequences table already initiazed, not querying sqlite db')
-      const file = await this.files.where('filename').equalsIgnoreCase(this.wordDatabaseFilename).first()
-      uint8Array = file?.blob
+      this.logger.writeLn('Word database present in local storage, fetching it');
+      console.log('Word database present in local storage, fetching it');
+      const file = await this.files.where('filename').equalsIgnoreCase(this.wordDatabaseFilename).first();
+      uint8Array = file?.blob;
     } else {
-      console.log('SQLite file not present, fetching it from the server')
-      let buf: ArrayBuffer
+      this.logger.writeLn('Word database not present locally, fetching it from the server');
+      console.log('Word database (SQLite) not present locally, fetching it from the server');
+      
       try {
-        // TODO : display a progress for this
-        buf = await fetch(this.wordDatabaseFullPath).then(res => res.arrayBuffer())
+        // TODO : use multiple provider XMLHttpRequest, Axios etc
+
+        // TODO : make a class for this (the SimpleProgressCallback)
+        this.logger.newLine();
+        this.logger.writeLn('Progress: ');
+        let lastProgressPerCent: number = 0;
+        const progressCallback: SimpleProgressCallback = {
+          callback: (contentLength: number | null, currentProgress: number, lastChunkLength: number) => {
+            if (contentLength === null) {
+              return;
+            }
+            const progressInPerCent = currentProgress / contentLength * 100;
+            if (progressInPerCent >= lastProgressPerCent + 10) {
+              this.logger.writeLn(progressInPerCent.toFixed() + ' %');
+              lastProgressPerCent += 10;
+            }
+          }
+        }
+        const fetchProgress: FetchProgress = new FetchProgress(progressCallback);
+        uint8Array = await fetchProgress.doFetch(this.wordDatabaseFullPath);
+
+        this.logger.writeLn('Done !');
+        this.logger.newLine();
+        console.log("Done");
+
       } catch (err: any) {
-        console.log('Unexpected error occured while fetching SQLite database from the server', err)
+        console.log('Unexpected error occured while fetching SQLite word database from the server', err)
         throw err
       }
-      uint8Array = new Uint8Array(buf)
 
-      const t0 = performance.now()
+      if (uint8Array === null) {
+        this.logger.error('Error: Database is empty');
+        throw new Error("Database file array is null");
+      }
+      if (uint8Array.length === 0) {
+        this.logger.error('Error: Database is empty');
+        throw new Error("Database file array is empty");
+      }
+
+      const t0 = performance.now();
       this.files.add({
         filename: 'sample.db',
         blob: uint8Array
       }).then(function (lastKey) {
-        const t1 = performance.now()
-        console.log('Successfully added file, last key is : ' + lastKey + ', in ' + (t1 - t0) / 1000 + ' seconds')
+        const t1 = performance.now();
+        console.log('File was inserted (key: ' + lastKey + '), it took ' + (t1 - t0) / 1000 + ' seconds');
       }).catch(Dexie.BulkError, function (e) {
-        console.error('Error while inserting file, error count : ' + e.failures.length)
-        console.error(e)
-      })
+        console.error('An unexpected error occurred while inserting file, error count : ' + e.failures.length);
+        console.error(e);
+      });
     }
 
     // const [SQL, buf] = await Promise.all([sqlPromise, dataPromise])
 
+    this.logger.writeLn('Loading word database in memory');
     console.log('initializing sqlite database')
 
     this.sqlDB = new SQL.Database(uint8Array)
@@ -114,10 +153,30 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
     const sequenceCount = this.countSequences();
 
     if (sequenceCount === undefined) {
+      // TODO : it is probably better to catch the errors and log them elsewhere
+      // TODO : uniformize the formats of errors
+      this.logger.error('Error: No sequences are present in the database');
       throw new Error('No sequences were present in the database')
     } else {
       this.sequencesCount = sequenceCount;
     }
+
+    const wordCount = this.countWords();
+
+    if (wordCount === undefined) {
+      // TODO : it is probably better to catch the errors and log them elsewhere
+      // TODO : uniformize the formats of errors
+      this.logger.error('Error: No words are present in the database');
+      throw new Error('No sequences were present in the database')
+    } else {
+      this.sequencesCount = sequenceCount;
+    }
+
+    this.logger.writeLn('Word count: ' + wordCount);
+    this.logger.writeLn('Sequence count: ' + sequenceCount);
+
+    // FIXME : it should be ensured elsewhere that the prompt is displayed
+    this.logger.prompt();
 
     // TODO : move it to an extension
     // TODO : create a collate ?
@@ -136,7 +195,17 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
 
   // FIXME : should it throw an exception instead ?
   public countSequences(): number | undefined {
-    const stmt = this.sqlDB.prepare('SELECT count(*) as c FROM sequences')
+    const stmt = this.sqlDB.prepare('SELECT count(*) as c FROM sequences');
+    while (stmt.step()) {
+      const count = stmt.getAsObject()
+      return count.c;
+    }
+    return undefined;
+  }
+
+  // FIXME : should it throw an exception instead ?
+  public countWords(): number | undefined {
+    const stmt = this.sqlDB.prepare('SELECT count(*) as c FROM words');
     while (stmt.step()) {
       const count = stmt.getAsObject()
       return count.c;

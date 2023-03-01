@@ -1,6 +1,7 @@
 import { Command } from "commander";
 
 // TODO : use a real logger system
+// FIXME : move it somewhere else
 export interface Logger {
   info(message: string): void;
   error(message: string): void;

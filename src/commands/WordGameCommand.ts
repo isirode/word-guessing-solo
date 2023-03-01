@@ -1,6 +1,5 @@
 import { Argument, Command } from 'commander';
 import { Logger, XtermCommand } from './XtermCommand';
-import { frenchWordDatabase } from '../singletons/Singletons';
 import { WordGame } from 'word-guessing-lib';
 
 // TODO : use a real logger system
@@ -24,6 +23,7 @@ export class WordGameCommand extends XtermCommand {
 
     // TODO : the logic should not be dependent on commander
 
+    // TODO : command with a sequence as a parameter assign, new with option ?
     this.command('new-sequence')
       .alias('new')
       .description('Generate a new sequence')
