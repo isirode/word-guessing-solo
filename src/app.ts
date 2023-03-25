@@ -162,7 +162,7 @@ async function main() {
   configureCommand(wordGameCommand);
   program.addCommand(wordGameCommand);
 
-  const databaseCommand = new DatabaseCommand(frenchWordDatabase, logger);
+  const databaseCommand = new DatabaseCommand(frenchWordDatabase, configureCommand, logger);
   databaseCommand.setup();
   configureCommand(databaseCommand);
   program.addCommand(databaseCommand);
@@ -275,7 +275,11 @@ async function main() {
     // FIXME : illegal access is logged from here
     // In Firefox, A mutation operation was attempted on a database that did not allow mutations
     // Is also logged here, but should not be
-    program.help();
+    // There is also A mutation operation was attempted on a database that did not allow mutations.
+    // (on the prompt)
+    // TODO : verify if errors still occur
+    const helpText = program.helpInformation();
+    writeLn(helpText);
     prompt();
   }
 }
