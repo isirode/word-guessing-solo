@@ -2,6 +2,13 @@ import type { IWordDatabase } from 'word-guessing-lib'
 import Dexie from 'dexie'
 import { FetchProgress, SimpleProgressCallback } from '../../../utils/FetchProgress'
 import { Logger } from '../../../commands/XtermCommand'
+// TODO : it is not easily usable, find a solution when we have time for this
+// We cannot use the code as is
+// This is not possible for instance
+// const sequence = stmt.getAsObject()
+// result = sequence.sequence
+// And the type code, not maintained by the provider of the lib, does not indicate how to use it
+// import initSqlJs, { Database } from 'sql.js'
 
 const initSqlJs = require('sql.js')
 
@@ -16,6 +23,7 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
   // sequences: Dexie.Table<ISequence, number>
   files: Dexie.Table<IFile, number>
   sqlDB: any
+  // sqlDB: Database
   sequencesCount: number = -1
   wordDatabaseRootURL: string
   wordDatabaseFilename: string

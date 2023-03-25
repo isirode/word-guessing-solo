@@ -20,6 +20,8 @@
     "xterm-addon-fit": "^0.7.0"
   },
   "devDependencies": {
+    "@types/node": "^18.14.4",
+    "@types/sql.js": "^1.4.4",
     "buffer": "^5.7.1",
     "parcel": "^2.8.3",
     "path-browserify": "^1.0.1",
