@@ -193,6 +193,9 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
     }
     this.sqlDB.create_function('compareInsensitive', compareInsensitive)
 
+    // TODO : make a lib for all this
+    // TODO : this does not work with accents
+    // Checkout instr maybe
     function containsInsensitive (word1: string, word2: string) {
       return word1.search(new RegExp(word2, 'i')) !== -1
     }
@@ -244,15 +247,17 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
     return result// .toLowerCase()
   }
 
+  // TODO : check words and sequence like GAIE et égaie
   public wordExists (word: string): boolean {
-    console.log('verifying if word exist')
+    console.log('verifying if word exist (' + word + ')')
     // We dont use compare insensitive because it is too slow
     // const stmt = this.sqlDB.prepare("SELECT * FROM words WHERE compareInsensitive(word, :word) LIMIT 1")// COLLATE NOCASE
-    // const normalizedWord = word.normalize("NFD")// .replace(/\p{Diacritic}/gu, "")
-    // console.log("normalized : " + normalizedWord)
+
+    const normalizedWord = word.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    console.log("normalized : " + normalizedWord);
     const stmt = this.sqlDB.prepare('SELECT * FROM words WHERE normalized_word = :word LIMIT 1')// COLLATE NOCASE
     stmt.bind({
-      ':word': word
+      ':word': normalizedWord
     })
     let result: string = ''
     while (stmt.step()) {
@@ -265,7 +270,7 @@ export class FrenchWordDatabase extends Dexie implements IWordDatabase {
   }
 
   public getWord (sequence: string): string {
-    const stmt = this.sqlDB.prepare('SELECT * FROM words WHERE containsInsensitive(word, :sequence) LIMIT 1')// COLLATE NOCASE
+    const stmt = this.sqlDB.prepare('SELECT * FROM words WHERE containsInsensitive(normalized_word, :sequence) LIMIT 1')// COLLATE NOCASE
     stmt.bind({
       ':sequence': sequence
     })
