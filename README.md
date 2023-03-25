@@ -2,7 +2,15 @@
 
 This is a game where you have to find a word containing a randomly provided sequence of letters.
 
-It is a solo offline version.
+It is a solo offline version, the interface mimic a command line.
+
+You can find a running version in [word-guessing-solo-pages](https://github.com/isirode/word-guessing-solo-pages).
+
+The database is build in my [HunspellSQLiteGenerator](https://github.com/isirode/HunspellSQLiteGenerator) project.
+
+The database is originally provided by [Grammalecte](https://grammalecte.net/) (license MPL 2.0).
+
+![Example](./Documentation/Resources/Example.PNG)
 
 ## Running the project
 
