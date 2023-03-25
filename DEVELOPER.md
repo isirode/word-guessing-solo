@@ -35,6 +35,8 @@
 
 - Obtain the version / progress of the Github Pages build
 
+- Provide a screen capture of the game
+
 ## Features
 
 - [ ] Database

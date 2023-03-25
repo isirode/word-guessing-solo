@@ -10,6 +10,10 @@ export interface Logger {
   prompt(): void;
 }
 
+// TODO : move it somewhere else
+// TODO : use something else to achieve the same thing
+export type ConfigureCommand = (command: Command) => void;
+
 export class XtermCommand extends Command {
 
   logger: Logger;

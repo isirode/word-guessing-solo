@@ -1,9 +1,6 @@
 import { Argument, Command } from 'commander';
-import { Logger, XtermCommand } from './XtermCommand';
+import { ConfigureCommand, Logger, XtermCommand } from './XtermCommand';
 import { WordGame } from 'word-guessing-lib';
-
-// TODO : use a real logger system
-export type ConfigureCommand = (command: Command) => void;
 
 export class WordGameCommand extends XtermCommand {
 
