@@ -151,8 +151,8 @@ async function main() {
   await frenchWordDatabase.initSQL();
 
   const wordGame = new WordGame(frenchWordDatabase, {
-    minOccurences: 0,
-    maxOccurences: 10,
+    minOccurences: 250,
+    maxOccurences: 1000,
     guessAsSession: true,
     maxAttempts: 5,
   });
@@ -182,6 +182,7 @@ async function main() {
 
     try {
       // TODO : replace by a state machine or an input capture system
+      // TODO : move the check somewhere else, it is also used in WordGameCommand
       if (wordGame.isGuessing) {
         const result = wordGame.verifyGuess(text);
 
