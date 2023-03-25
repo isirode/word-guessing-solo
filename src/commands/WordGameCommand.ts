@@ -1,6 +1,6 @@
 import { Argument, Command } from 'commander';
 import { ConfigureCommand, Logger, XtermCommand } from './XtermCommand';
-import { WordGame } from 'word-guessing-lib';
+import { WordGame, GuessResult } from 'word-guessing-lib';
 
 export class WordGameCommand extends XtermCommand {
 
@@ -33,19 +33,51 @@ export class WordGameCommand extends XtermCommand {
           this.logger.writeLn('You have unlimited attempts to find a word containing this sequence of letters.');
         }
         this.logger.prompt();
-      })
+      });
 
     const exampleCommand = this.command('example');
     this.configureCommand(exampleCommand);// FIXME : this is called but not used
     exampleCommand
       .alias('ex')
       .description('Provide an example based on the current sequence')
-      .action(() => {
+      .argument('[sequence]', 'the sequence to use')
+      .action((sequence: string) => {
+        if (sequence != undefined) {
+          this.wordGame.currentSequence = sequence;
+        }
         try {
           this.logger.info('Example: ' + this.wordGame.getExampleForSequence());
         } catch (error) {
           this.logger.error(error);
         }
+      });
+
+    this.command('verify')
+      .description('Verify a word and a sequence')
+      .argument('<sequence>', 'the sequence to use')
+      .argument('<word>', 'the word to verify')
+      .action((sequence: string, word: string) => {
+        this.logger.newLine();
+        const actualSequence = sequence.toUpperCase();
+        this.logger.writeLn('Verifying ' + word + ' against ' + actualSequence);
+        this.wordGame.currentSequence = actualSequence;
+        const result = this.wordGame.verifyGuess(word);
+        switch (result) {
+          case GuessResult.SUCCESSFUL_GUESS:
+            this.logger.writeLn('Success !')
+            break;
+          case GuessResult.WORD_DO_NOT_EXIST:
+            this.logger.writeLn('This word do not exist in the database.');
+            break;
+          case GuessResult.WORD_DO_NOT_MATCH_SEQUENCE:
+            this.logger.writeLn(`This word do not match the current sequence ('${this.wordGame.currentSequence}').`);
+            break;
+          default:
+            this.logger.writeLn('Internal error');
+            console.error(`GuessResult '${result} is unknown`);
+        }
+        this.wordGame.reset();
+        this.logger.prompt();
       });
 
     const setMinOccurencesCommand = this.command('set-min-occurences');
