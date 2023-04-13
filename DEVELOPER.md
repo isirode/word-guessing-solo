@@ -1,5 +1,7 @@
 # Developer
 
+I use Yarn for running the commands but you can use npm as well.
+
 ## Running tests
 
 > yarn test
@@ -8,10 +10,14 @@
 
 > yarn build
 
-## TODO
+## Features
 
-- [ ] WASM
-  - [ ] Bundle the SQL.js WASM file
+- [ ] Serving the game
+  - [ ] https://www.jsdelivr.com/
+  - [ ] https://codesandbox.io/
+  - [ ] https://unpkg.com/
+
+## TODO
 
 - [ ] Deploy the database on a custom image
   - Build the image
@@ -22,28 +28,3 @@
 
 - Indicate that Github is logging personal information (https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages)
 
-- Serve the project from other provider
-  - https://www.jsdelivr.com/
-  - https://codesandbox.io/
-  - https://unpkg.com/
-
-- Check if can use something else than Dexie for the storage
-
-- Publish the Lerna workspace page
-
-- Log word count with the sequence
-
-- Obtain the version / progress of the Github Pages build
-
-- Provide a screen capture of the game
-
-## Features
-
-- [ ] Database
-  - [x] Log the progress of the initialization at startup
-  - [x] Log the number of words and sequences at startup
-
-- [ ] Database command
-  - [ ] Indicate the status of the initialization ('status')
-  - [ ] Indicate the number of sequences
-  - [ ] Indicate the number of words

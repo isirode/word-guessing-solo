@@ -5,11 +5,8 @@ import { Command, OutputConfiguration } from 'commander';
 
 // import { frenchWordDatabase, wordGame } from './singletons/Singletons';
 
-import { DatabaseCommand } from './commands/DatabaseCommand';
-import { WordGameCommand } from './commands/WordGameCommand';
-import { Logger } from './commands/XtermCommand';
+import { DatabaseCommand, WordGameCommand, Logger, FrenchWordDatabase } from 'word-guessing-game-common';
 import { GuessResult, WordGame } from 'word-guessing-lib';
-import { FrenchWordDatabase } from './domain/adapters/secondary/FrenchWordDatabase';
 
 // TODO : fix the blink cursor
 
@@ -282,6 +279,7 @@ async function main() {
     const helpText = program.helpInformation();
     writeLn(helpText);
     prompt();
+
   }
 }
 
