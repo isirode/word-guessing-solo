@@ -8,6 +8,7 @@ import { Command, OutputConfiguration } from 'commander';
 import { DatabaseCommand, WordGameCommand, Logger, FrenchWordDatabase, WordDatabaseFactory, SupportedLangDatabases, WordGameCommander, DatabaseCommander } from 'word-guessing-game-common';
 import { GuessResult, WordGame } from 'word-guessing-lib';
 import { loadConfig } from './config/Config';
+import { ConsoleAppender, IAppender, IConfiguration, ILayout, ILogEvent, Level, LogManager, LoggerFactory, PupaLayout } from 'log4j2-typescript';
 
 // TODO : fix the blink cursor
 
@@ -140,13 +141,77 @@ const logger: Logger = {
   prompt: prompt,
 }
 
+// TODO : try to use this and type the logging system
+interface TermLogData {
+  doPrompt: boolean;
+}
+
+
+class TermAppender implements IAppender {
+
+  name: string;
+  layout: ILayout;
+
+  constructor(name: string, layout: ILayout) {
+    this.name = name;
+    this.layout = layout;
+  }
+
+  handle(logEvent: ILogEvent): void {
+    // Warn : we have to do this since we are using a single terminal in this project
+    // The logger use an event system, it will be called after the prompt, creating unwanted results
+    if (logEvent.message !== '') {
+      logger.writeLn(this.layout.format(logEvent));
+    }
+    if (logEvent.object && logEvent.object.doPrompt) {
+      console.log("doing prompt");
+      logger.prompt();
+    }
+  }
+
+}
+
+const logConfiguration: IConfiguration = {
+  appenders: [
+    new ConsoleAppender("console", new PupaLayout("{loggerName} {level} {time} {message}")),
+    new TermAppender("term", new PupaLayout("{message}"))
+  ],
+  loggers: [
+    {
+      name: "technical",
+      level: Level.INFO,
+      refs: [
+        {
+          ref: "console"
+        }
+      ]
+    },
+    {
+      name: "term",
+      level: Level.INFO,
+      refs: [
+        {
+          ref: "term"
+        }
+      ]
+    }
+  ]
+}
+
+const logManager: LogManager = new LogManager(logConfiguration);
+
 async function main() {
 
+  let consoleLog = LoggerFactory.getLogger("technical");
+  consoleLog.info("Starting", {});
+
+  let termLog = LoggerFactory.getLogger("term"); 
+
   // TODO : insert ASCII art here
-  term.write('\x1B[1;3;31mWordGuessr\x1B[0m\r\n');
+  termLog.info('\x1B[1;3;31mWordGuessr\x1B[0m\r\n');
 
   // TODO : mutualize this message with the multiplayer game
-  writeLn(`We are using two different databases for the dictionaries:
+  termLog.info(`We are using two different databases for the dictionaries:
   - For the french language, we are using an extraction of Grammalecte's dictionary, which is released in MPL 2.0
   - For the english language, we are using an extraction of Wiktionary's dictionary, which is released under a dual license:
       - GNU Free Documentation License (GFDL)
@@ -181,7 +246,7 @@ async function main() {
     language: "fra"
   });
 
-  logger.writeLn('Default language will be french, you can change it using the command "run wg lang english"');
+  termLog.info('Default language will be french, you can change it using the command "run wg lang english"');
   logger.prompt();
 
   const wordGameCommand = new WordGameCommander(wordGame, configureCommand, logger, frenchDatabase, englishDatabase);
@@ -200,7 +265,7 @@ async function main() {
   // TODO : add a help command
   // TODO : use a context system : if press wg, stay in the wg command
   function runCommand(text) {
-    console.log("runCommand");
+    consoleLog.info("runCommand");
 
     // process (node), script (script.js), args
     // require to pass the name of the command if the name is passed to the program
@@ -217,32 +282,30 @@ async function main() {
 
         switch (result) {
           case GuessResult.SUCCESSFUL_GUESS:
-            writeLn('Success !')
+            termLog.info('Success !')
             break;
           case GuessResult.WORD_DO_NOT_EXIST:
-            writeLn('This word do not exist in the database.');
+            termLog.info('This word do not exist in the database.');
             break;
           case GuessResult.WORD_DO_NOT_MATCH_SEQUENCE:
-            writeLn(`This word do not match the current sequence ('${wordGame.currentSequence}').`);
+            termLog.info(`This word do not match the current sequence ('${wordGame.currentSequence}').`);
             break;
           default:
-            writeErr('Internal error');
-            console.error(`GuessResult '${result} is unknown`);
+            termLog.error('Internal error');
+            consoleLog.error(`GuessResult '${result} is unknown`);
         }
         if (wordGame.remainingAttempts() === 0) {
-          writeLn('You have failed to find a word matching this sequence of letters.');
-          writeLn(`You could have tried : '${wordGame.getExampleForSequence()}'`);
+          termLog.info('You have failed to find a word matching this sequence of letters.');
+          termLog.info(`You could have tried : '${wordGame.getExampleForSequence()}'`);
           wordGame.reset();
-          prompt();
-        } else {
-          prompt();
         }
+        termLog.info("", {doPrompt: true});
       } else {
         program.parse(args);
       }
     } catch (err) {
-      console.log("an error occured:");
-      console.warn(err);
+      consoleLog.info("an error occured:");
+      consoleLog.warn(err);
     }
   }
 
@@ -255,13 +318,13 @@ async function main() {
       case '\u001B':
         if (wordGame.isGuessing) {
           wordGame.reset();
-          writeOut('You are no longer playing.');
+          termLog.info('You are no longer playing.');
         }
         break;
       case '\u0003': // Ctrl+C
         if (wordGame.isGuessing) {
           wordGame.reset();
-          writeOut('You are no longer playing.');
+          termLog.info('You are no longer playing.');
         } else {
           term.write('^C');
           prompt();
@@ -304,9 +367,8 @@ async function main() {
     // (on the prompt)
     // TODO : verify if errors still occur
     const helpText = program.helpInformation();
-    writeLn(helpText);
-    prompt();
-
+    termLog.info(helpText);
+    termLog.info("", {doPrompt: true})
   }
 }
 
