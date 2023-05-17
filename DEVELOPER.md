@@ -12,6 +12,10 @@ I use Yarn for running the commands but you can use npm as well.
 
 ## Features
 
+- [x] Languages
+  - [x] French
+  - [x] English
+
 - [ ] Serving the game
   - [ ] https://www.jsdelivr.com/
   - [ ] https://codesandbox.io/
@@ -28,3 +32,4 @@ I use Yarn for running the commands but you can use npm as well.
 
 - Indicate that Github is logging personal information (https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages)
 
+- Add links to the database source and licenses

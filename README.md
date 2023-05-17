@@ -12,6 +12,16 @@ The database is originally provided by [Grammalecte](https://grammalecte.net/) (
 
 ![Example](./Documentation/Resources/Example.PNG)
 
+## Features
+
+- Get a sequence of letter in:
+  - French (using Grammecte)
+  - Wiktionary (using Wiktionary)
+- Configure
+  - Min number of occurences of the sequence
+  - Max number of occurences of the sequence
+  - Max number of attempts to guess a word containing the sequence
+
 ## Running the project
 
 You can use Parcel + Yarn : 'yarn start'
