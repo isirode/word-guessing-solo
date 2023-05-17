@@ -5,8 +5,9 @@ import { Command, OutputConfiguration } from 'commander';
 
 // import { frenchWordDatabase, wordGame } from './singletons/Singletons';
 
-import { DatabaseCommand, WordGameCommand, Logger, FrenchWordDatabase } from 'word-guessing-game-common';
+import { DatabaseCommand, WordGameCommand, Logger, FrenchWordDatabase, WordDatabaseFactory, SupportedLangDatabases, WordGameCommander, DatabaseCommander } from 'word-guessing-game-common';
 import { GuessResult, WordGame } from 'word-guessing-lib';
+import { loadConfig } from './config/Config';
 
 // TODO : fix the blink cursor
 
@@ -140,26 +141,55 @@ const logger: Logger = {
 }
 
 async function main() {
-  const wordDatabaseRootURL: string = 'https://dev.onesime-deleham.ovh/';
-  const wordDatabaseFilename: string = 'sample.db';
-  const frenchWordDatabase = new FrenchWordDatabase(wordDatabaseRootURL, wordDatabaseFilename, logger);
-  // TODO : add a log here for Dexie
-  await frenchWordDatabase.open();
-  await frenchWordDatabase.initSQL();
 
-  const wordGame = new WordGame(frenchWordDatabase, {
+  // TODO : insert ASCII art here
+  term.write('\x1B[1;3;31mWordGuessr\x1B[0m\r\n');
+
+  // TODO : mutualize this message with the multiplayer game
+  writeLn(`We are using two different databases for the dictionaries:
+  - For the french language, we are using an extraction of Grammalecte's dictionary, which is released in MPL 2.0
+  - For the english language, we are using an extraction of Wiktionary's dictionary, which is released under a dual license:
+      - GNU Free Documentation License (GFDL)
+      - Creative Commons Attribution-ShareAlike License
+  `);
+
+  const config = loadConfig();
+
+  const supportedLangDatabases: SupportedLangDatabases = {
+    english: {
+      language: "eng",
+      filename: config.english.filename,
+    },
+    french: {
+      language: "fra",
+      filename: config.french.filename,
+    }
+  };
+
+  const databaseFactory = new WordDatabaseFactory(logger, config.rootUrl, supportedLangDatabases);
+
+  // TODO : support english
+  // probably need to add the VirtualInput too
+  const englishDatabase = await databaseFactory.getEnglishWordDatabase();
+  const frenchDatabase = await databaseFactory.getFrenchWordDatabase();
+
+  const wordGame = new WordGame(frenchDatabase, englishDatabase, {
     minOccurences: 250,
     maxOccurences: 1000,
     guessAsSession: true,
     maxAttempts: 5,
+    language: "fra"
   });
 
-  const wordGameCommand = new WordGameCommand(wordGame, configureCommand, logger);
+  logger.writeLn('Default language will be french, you can change it using the command "run wg lang english"');
+  logger.prompt();
+
+  const wordGameCommand = new WordGameCommander(wordGame, configureCommand, logger, frenchDatabase, englishDatabase);
   wordGameCommand.setup();
   configureCommand(wordGameCommand);
   program.addCommand(wordGameCommand);
 
-  const databaseCommand = new DatabaseCommand(frenchWordDatabase, configureCommand, logger);
+  const databaseCommand = new DatabaseCommander(frenchDatabase,englishDatabase, configureCommand, logger);
   databaseCommand.setup();
   configureCommand(databaseCommand);
   program.addCommand(databaseCommand);
@@ -267,9 +297,6 @@ async function main() {
   });
 
   if (targetElement != null) {
-    // TODO : insert ASCII art here
-    term.write('\x1B[1;3;31mWordGuessr\x1B[0m ');
-
     // FIXME : illegal access is logged from here
     // In Firefox, A mutation operation was attempted on a database that did not allow mutations
     // Is also logged here, but should not be
